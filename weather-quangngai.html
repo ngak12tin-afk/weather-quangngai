@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Dự báo thời tiết Quảng Ngãi 7 ngày</title>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background: #e3f2fd;
+    padding: 10px;
+}
+.weather {
+    max-width: 700px;
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+}
+h2 {
+    color: #1565c0;
+    text-align: center;
+}
+.day {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    padding: 8px 0;
+}
+.day img {
+    width: 40px;
+    margin-right: 10px;
+}
+.day:last-child {
+    border-bottom: none;
+}
+canvas {
+    margin-top: 20px;
+}
+.update {
+    text-align: right;
+    font-size: 13px;
+    color: #555;
+}
+</style>
+</head>
+
+<body>
+
+<div class="weather">
+    <h2>🌦 Thời tiết Quảng Ngãi – 7 ngày</h2>
+
+    <div id="forecast"></div>
+
+    <canvas id="tempChart"></canvas>
+
+    <p class="update" id="update"></p>
+</div>
+
+<script>
+const apiKey = "API_KEY_CỦA_BẠN"; // Thay API Key tại đây
+
+// Tọa độ Quảng Ngãi
+const lat = 15.12;
+const lon = 108.80;
+
+const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=current,minutely,hourly,alerts&units=metric&lang=vi&appid=${apiKey}`;
+
+let chart;
+
+function loadWeather() {
+    fetch(url)
+    .then(res => res.json())
+    .then(data => {
+        let html = "";
+        let labels = [];
+        let temps = [];
+
+        for (let i = 0; i < 7; i++) {
+            let day = data.daily[i];
+            let date = new Date(day.dt * 1000);
+            let dateStr = date.toLocaleDateString("vi-VN", {
+                weekday: 'short',
+                day: '2-digit',
+                month: '2-digit'
+            });
+
+            labels.push(dateStr);
+            temps.push(day.temp.day);
+
+            let icon = `https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png`;
+
+            html += `
+            <div class="day">
+                <img src="${icon}">
+                <div>
+                    <strong>${dateStr}</strong><br>
+                    🌡 ${day.temp.day}°C |
+                    💧 ${day.humidity}% |
+                    ${day.weather[0].description}
+                </div>
+            </div>`;
+        }
+
+        document.getElementById("forecast").innerHTML = html;
+
+        drawChart(labels, temps);
+
+        document.getElementById("update").innerText =
+            "Cập nhật lúc: " + new Date().toLocaleTimeString("vi-VN");
+    });
+}
+
+function drawChart(labels, temps) {
+    const ctx = document.getElementById('tempChart').getContext('2d');
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Nhiệt độ (°C)',
+                data: temps,
+                fill: true,
+                borderColor: '#1e88e5',
+                backgroundColor: 'rgba(30,136,229,0.2)',
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: true }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            }
+        }
+    });
+}
+
+loadWeather();
+setInterval(loadWeather, 3600000); // cập nhật mỗi 1 giờ
+</script>
+
+</body>
+</html>
